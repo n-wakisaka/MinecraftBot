@@ -5,7 +5,7 @@ maintenance_hour = 5
 
 [minecraft_server]
 ssh_username = "username"
-ssh_key_filename = "ssh private key file path"
+ssh_key_filepath = "ssh private key file path"
 run_command = "start server command"
 query_port = 25565
 rcon_port = 25575
