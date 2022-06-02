@@ -1,0 +1,4 @@
+token = "your bot token"
+game_server_instance_id = "your aws-server instance id"
+timeout_minute = 15
+maintenance_time = 5
