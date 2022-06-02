@@ -45,7 +45,7 @@ class Bot:
         # intents.guilds = True
         # intents.integrations = True
         # intents.invites = True
-        intents.members = True
+        # intents.members = False
         # intents.message_content = False
         # intents.messages = True
         # intents.presences = False
