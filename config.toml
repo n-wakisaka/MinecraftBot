@@ -1,9 +1,9 @@
 token = "your bot token"
-game_server_instance_id = "your aws-server instance id"
-timeout_minute = 15
-maintenance_hour = 5
 
 [minecraft_server]
+aws_instance_id = "your aws-server instance id"
+timeout_minute = 15
+maintenance_hour = 5
 ssh_username = "username"
 ssh_key_filepath = "ssh private key file path"
 run_command = "start server command"
