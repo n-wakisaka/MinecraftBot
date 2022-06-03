@@ -15,7 +15,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
     def __init__(self, bot, config):
         self.bot = bot
         self.config = config
-        self.instance_id = self.config.game_server_instance_id
+        self.instance_id = self.config.aws_instance_id
         self.server_ip = None
         self.local_ip = None
 
@@ -24,7 +24,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
 
         self.member_empty_time = None
         self.elapsed_time = datetime.timedelta()
-        self.timeout_timedelta = datetime.timedelta(minutes=self.config.timeout_minute+1)
+        self.timeout_timedelta = datetime.timedelta(minutes=self.config.timeout_minute)
 
     async def set_discord_status(self):
         """
@@ -57,14 +57,14 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         """
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(self.local_ip, username=self.config.minecraft_server.ssh_username, key_filename=self.config.minecraft_server.ssh_key_filepath)
+        ssh_client.connect(self.local_ip, username=self.config.ssh_username, key_filename=self.config.ssh_key_filepath)
         return ssh_client
     
     def get_minecraft_stats(self):
         """
         Minecraftサーバに接続しstatsを取得する
         """
-        with queryClient(self.local_ip, self.config.minecraft_server.query_port) as client:
+        with queryClient(self.local_ip, self.config.query_port) as client:
             stats = client.stats(full=True)
         return stats
     
@@ -88,7 +88,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
     
     def start_minecraft_server(self):
         ssh_client = self.get_ssh_client()
-        _, stdout, _ = ssh_client.exec_command(self.config.minecraft_server.run_command)
+        _, stdout, _ = ssh_client.exec_command(self.config.run_command)
         for x in stdout:
             print(x.strip())
             if 'Done' in x:
@@ -97,7 +97,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
     
     def stop_minecraft_server(self):
         try:
-            with rconClient(self.local_ip, self.config.minecraft_server.rcon_port, passwd=self.config.minecraft_server.rcon_passwd) as client:
+            with rconClient(self.local_ip, self.config.rcon_port, passwd=self.config.rcon_passwd) as client:
                 log = client.stop()
                 print(log)
                 time.sleep(10)

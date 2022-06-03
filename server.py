@@ -20,7 +20,7 @@ class Bot:
         self.config = config
 
     def start(self, loop):
-        loop.create_task(self.bot.add_cog(MinecraftCog(self.bot, self.config)))
+        loop.create_task(self.bot.add_cog(MinecraftCog(self.bot, self.config.minecraft_server)))
         loop.create_task(self.bot.start(self.config.token))
 
     def run(self):

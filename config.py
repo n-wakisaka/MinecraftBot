@@ -3,6 +3,9 @@ from dataclasses import dataclass
 
 @dataclass
 class ConfigMinecraftServer:
+    aws_instance_id: str
+    timeout_minute: int
+    maintenance_hour: int
     ssh_username: str
     ssh_key_filepath: str
     run_command: str
@@ -13,9 +16,6 @@ class ConfigMinecraftServer:
 @dataclass
 class Config:
     token: str
-    game_server_instance_id: str
-    timeout_minute: int
-    maintenance_hour: int
     minecraft_server: ConfigMinecraftServer
 
 
