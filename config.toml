@@ -4,6 +4,7 @@ token = "your bot token"
 aws_instance_id = "your aws-server instance id"
 timeout_minute = 15
 maintenance_hour = 5
+timezone = "Asia/Tokyo"
 ssh_username = "username"
 ssh_key_filepath = "ssh private key file path"
 run_command = "start server command"

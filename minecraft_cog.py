@@ -5,6 +5,7 @@ import asyncio
 import paramiko
 import time
 import datetime
+import zoneinfo
 from mcipc.rcon.je import Client as rconClient
 from mcipc.query import Client as queryClient
 
@@ -25,6 +26,11 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         self.member_empty_time = None
         self.elapsed_time = datetime.timedelta()
         self.timeout_timedelta = datetime.timedelta(minutes=self.config.timeout_minute)
+
+        if self.config.timezone in zoneinfo.available_timezones():
+            self.timezone = zoneinfo.ZoneInfo(self.config.timezone)
+        else:
+            self.timezone = zoneinfo.ZoneInfo('UTC')
 
         self.server_start_status = None
 
@@ -75,7 +81,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         サーバ人数が0人状態の経過時間を取得する
         """
         if self.member_empty_time is not None:
-            return datetime.datetime.now() - self.member_empty_time
+            return datetime.datetime.now(self.timezone) - self.member_empty_time
         else:
             return datetime.timedelta()
 
@@ -248,7 +254,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         try:
             stats = self.get_minecraft_stats()
             if self.member_empty_time is None and stats.num_players == 0:
-                self.member_empty_time = datetime.datetime.now()
+                self.member_empty_time = datetime.datetime.now(self.timezone)
             elif stats.num_players != 0:
                 self.member_empty_time = None
         except:
@@ -262,7 +268,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
             return
 
         # 指定時間に1日1度サーバを再起動する(放置対策)
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(self.timezone)
         if not self.is_restarted and now.hour == self.config.maintenance_hour:
             self.is_restarted = True
             await self.send_message_all('サーバメンテナンス中...')

@@ -6,6 +6,7 @@ class ConfigMinecraftServer:
     aws_instance_id: str
     timeout_minute: int
     maintenance_hour: int
+    timezone: str
     ssh_username: str
     ssh_key_filepath: str
     run_command: str
