@@ -26,6 +26,8 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         self.elapsed_time = datetime.timedelta()
         self.timeout_timedelta = datetime.timedelta(minutes=self.config.timeout_minute)
 
+        self.server_start_status = None
+
     async def set_discord_status(self):
         """
         サーバ用AWSインスタンス起動状況をDiscord Statusに反映させる
@@ -113,25 +115,38 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         for guild_id, channel in self.text_channels.items():
             await channel.send(text)
 
-    async def start_impl(self, channel=None):
+    async def start_impl(self, channel=None, ctx=None):
         # インスタンス起動状況確認
         if await self.get_server_state() == 'running':
             await self.send_message(channel, f'サーバは起動しています。アドレスは `{self.server_ip}` です')
             return
         
-        await self.send_message(channel, 'サーバ起動中...')
+        text = f'サーバ起動中... 4,5分かかる場合があります 気長にお待ちください...'
+        if ctx is not None:
+            # コマンドから起動された場合
+            command_group = [g for g in self.get_commands() if g.name == 'minecraft'][0]
+            status_command = command_group.get_command('status')
+            if status_command is not None:
+                status_command_str = f'`{ctx.clean_prefix}{status_command.qualified_name} {status_command.signature}`'
+                text += f'\n{status_command_str}で起動状況を確認できます'
+        await self.send_message(channel, text)
+
+        self.server_start_status = '1/4 (クラウドインスタンス起動中...)'
         # インスタンスの起動
         await subprocess_run(f'aws ec2 start-instances --instance-ids {self.instance_id}')
 
         # インスタンスが起動するまで待機
         await subprocess_run(f'aws ec2 wait instance-running --instance-ids {self.instance_id}')
+        self.server_start_status = '2/4 (クラウドインスタンス準備中...)'
         await subprocess_run(f'aws ec2 wait instance-status-ok --instance-ids {self.instance_id}')
 
         # start server
+        self.server_start_status = ' 3/4 (Minecraftサーバ起動中...)'
         self.start_minecraft_server()
 
         # 接続用のIPアドレスをdiscordに送信
         await self.send_message_all(f'サーバが起動しました！ アドレスは `{self.server_ip}` です')
+        self.server_start_status = None
         await self.send_server_status_all()
     
     async def stop_impl(self, channel=None):
@@ -153,7 +168,11 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
     async def send_server_status(self, channel):
         if channel is None:
             return
-        if await self.get_server_state() != 'running':
+        if self.server_start_status is not None:
+            # サーバ起動フェーズ
+            text = f'サーバ起動中... {self.server_start_status}'
+            color = 0xff9932
+        elif await self.get_server_state() != 'running':
             text = f'サーバ停止中'
             color = 0xff9932
         else:
@@ -185,7 +204,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         Mincraftサーバを起動する
         """
         self.text_channels[ctx.guild.id] = ctx.channel
-        await self.start_impl(ctx.channel)
+        await self.start_impl(ctx.channel, ctx)
 
     @minecraft.command()
     async def stop(self, ctx):
