@@ -92,16 +92,14 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         await self.set_discord_status()
     
     async def start_minecraft_server(self):
-        ssh_client = await self.get_ssh_client()
-        proc = await ssh_client.create_process(self.config.run_command, stdout=asyncio.subprocess.PIPE)
-        while True:
-            text = await proc.stdout.readline()
-            text = text.strip()
-            print(text)
-            if 'Done' in text:
-                break
-        proc.close()
-        ssh_client.close()
+        async with await self.get_ssh_client() as ssh_client:
+            async with ssh_client.create_process(self.config.run_command, stdout=asyncio.subprocess.PIPE) as proc:
+                while True:
+                    text = await proc.stdout.readline()
+                    text = text.strip()
+                    print(text)
+                    if 'Done' in text:
+                        break
     
     def stop_minecraft_server(self):
         try:
