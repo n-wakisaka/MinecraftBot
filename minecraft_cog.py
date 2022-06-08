@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands, tasks
 
 import asyncio
-import paramiko
+import asyncssh
 import time
 import datetime
 import zoneinfo
@@ -59,14 +59,11 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
     async def get_public_ip(self):
         return await self.get_aws_server_info('PublicIpAddress')
 
-    def get_ssh_client(self):
+    async def get_ssh_client(self):
         """
-        サーバとSSH接続するparmiko clientを取得する
+        サーバとSSH接続するasyncssh clientを取得する
         """
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(self.local_ip, username=self.config.ssh_username, key_filename=self.config.ssh_key_filepath)
-        return ssh_client
+        return await asyncssh.connect(self.local_ip, username=self.config.ssh_username, client_keys=self.config.ssh_key_filepath, known_hosts=None)
     
     def get_minecraft_stats(self):
         """
@@ -94,13 +91,16 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
         self.local_ip = await self.get_private_ip()
         await self.set_discord_status()
     
-    def start_minecraft_server(self):
-        ssh_client = self.get_ssh_client()
-        _, stdout, _ = ssh_client.exec_command(self.config.run_command)
-        for x in stdout:
-            print(x.strip())
-            if 'Done' in x:
+    async def start_minecraft_server(self):
+        ssh_client = await self.get_ssh_client()
+        proc = await ssh_client.create_process(self.config.run_command, stdout=asyncio.subprocess.PIPE)
+        while True:
+            text = await proc.stdout.readline()
+            text = text.strip()
+            print(text)
+            if 'Done' in text:
                 break
+        proc.close()
         ssh_client.close()
     
     def stop_minecraft_server(self):
@@ -148,7 +148,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
 
         # start server
         self.server_start_status = ' 3/4 (Minecraftサーバ起動中...)'
-        self.start_minecraft_server()
+        await self.start_minecraft_server()
 
         # 接続用のIPアドレスをdiscordに送信
         await self.send_message_all(f'サーバが起動しました！ アドレスは `{self.server_ip}` です')
@@ -232,7 +232,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
     # hidden commands for debug
     @minecraft.command(hidden=True)
     async def start_on_server(self, ctx):
-        self.start_minecraft_server()
+        await self.start_minecraft_server()
     
     @minecraft.command(hidden=True)
     async def stop_on_server(self, ctx):
@@ -241,7 +241,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
     @minecraft.command(hidden=True)
     async def restart_on_server(self, ctx):
         self.stop_minecraft_server()
-        self.start_minecraft_server()
+        await self.start_minecraft_server()
 
     # loop task
     @tasks.loop(minutes=1.0)
@@ -273,7 +273,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
             self.is_restarted = True
             await self.send_message_all('サーバメンテナンス中...')
             self.stop_minecraft_server()
-            self.start_minecraft_server()
+            await self.start_minecraft_server()
             await self.send_message_all('サーバメンテナンスが終了しました')
             await self.send_server_status_all()
 
