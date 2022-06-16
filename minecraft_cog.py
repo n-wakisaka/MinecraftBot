@@ -284,7 +284,7 @@ class MinecraftCog(commands.Cog, name='Minecraft'):
             await self.send_message_all('サーバメンテナンスが終了しました')
             await self.send_server_status_all()
 
-        if self.is_restarted and now.hour == (self.config.maintenance_time+1)%24:
+        if self.is_restarted and now.hour == (self.config.maintenance_hour+1)%24:
             self.is_restarted = False
 
 
